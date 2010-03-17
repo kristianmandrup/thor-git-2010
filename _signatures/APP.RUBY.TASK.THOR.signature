@@ -1,0 +1,10 @@
+----
+Application:
+  Name: gitproject
+  Origin: mine
+  Version: 0.1.0
+  Test:
+  - Cucumber
+  - Rspec
+  
+  
