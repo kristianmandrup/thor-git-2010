@@ -7,14 +7,16 @@ module Git
     # Define arguments and options
     argument :name # :desc, :required, :optional, :type (:string, :hash, :array, :numeric), :default, :banner
 
-    class_option :github,       :type => :boolean, :default => false,   :aliases => '-G'
-    class_option :push,         :type => :boolean, :default => true,    :aliases => '-P'
-    class_option :skip_license, :type => :boolean, :default => false,   :aliases => '-L'
+    class_option :github,       :type => :boolean, :aliases => '-g',  :default => false     
+    class_option :push,         :type => :boolean, :aliases => '-p',  :default => false     
+    class_option :skip_license, :type => :boolean, :aliases => '-l',  :default => false     
+    class_option :message,      :type => :string,  :aliases => '-m',  :default => 'Initial commit'
+    class_option :return,       :type => :boolean, :aliases => '-r',  :default => false       
 
     def self.source_root
       # use line below when deploying the task
-      # template_path(__FILE__)
-      local_template_path(__FILE__) # tries ROOT/templates and then ROOT/lib/templates
+      template_path(__FILE__)
+      # local_template_path(__FILE__) # tries ROOT/templates and then ROOT/lib/templates
     end
 
     def create_root
@@ -31,16 +33,23 @@ module Git
       template 'README.markdown'
       template 'MITLICENSE' if !options[:skip_license]
 
-      git :add => "."
-      git :commit => "-a -m 'Initial commit'"
+      git :add => '.'
+      git :commit => "-a -m '#{options[:message]}'"
     end
 
-    def github_push
-      return if !options[:github]
+    def github
+      return false if !options[:github]
       git :remote => "add origin git@github.com:$GITHUB_NAME/$name.git"
-      return if !options[:push]
+    end
+    
+    def github_push
+      return false if !options[:push]
       git :push => 'origin master'
     end 
+
+    def return_after
+      run "cd .." if options[:return]
+    end
     
     protected
       include Base
@@ -51,7 +60,7 @@ module Git
   class Open < Thor::Group
     include Thor::Actions
 
-    argument :name, :type => :string, :optional
+    argument :name, :type => :string, :optional => true
 
     def execute
       newbranch = name if name && !name.empty?
@@ -93,7 +102,7 @@ module Git
   class Close < Thor::Group
     include Thor::Actions
 
-    argument :name, :type => :string, :optional
+    argument :name, :type => :string, :optional => true
 
     def execute
       branch = name if name && !name.empty?
@@ -203,6 +212,8 @@ module Git
   # Squash the current branch into the master branch.
   class Squash < Thor::Group
     include Thor::Actions
+
+    
 
     def execute
       @merge_flags = {:squash => true}
